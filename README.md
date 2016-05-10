@@ -40,11 +40,10 @@ Add the following line in your gradle dependencies:
 	
 # Take picture | stop/resume preview
 
-        // take picture
-        cam.takePicture();
-        // stop preview
-        cam.stopPreview();
-        // resume preview
-        cam.resumePreview();
-
+	// take picture
+	cam.takePicture();
+	// stop preview
+	cam.stopPreview();
+	// resume preview
+	cam.resumePreview();
 
