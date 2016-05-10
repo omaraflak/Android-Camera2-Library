@@ -2,18 +2,18 @@ apply plugin: 'com.android.library'
 
 ext {
     bintrayRepo = 'maven'
-    bintrayName = 'android'
+    bintrayName = 'ezcam'
 
     publishedGroupId = 'me.aflak.libraries'
-    libraryName = 'WebClient'
-    artifact = 'webclient'
+    libraryName = 'EZCam'
+    artifact = 'ezcam'
 
-    libraryDescription = 'WebClient allows simple asynchronous http requests and implements listeners.'
+    libraryDescription = 'Simple library that allows you to display preview and take pictures easily with callbacks!'
 
-    siteUrl = 'https://github.com/omaflak/WebClient'
-    gitUrl = 'https://github.com/omaflak/WebClient.git'
+    siteUrl = 'https://github.com/omaflak/Android-Camera2-Library'
+    gitUrl = 'https://github.com/omaflak/Android-Camera2-Library.git'
 
-    libraryVersion = '1.1'
+    libraryVersion = '1.0'
 
     developerId = 'omaflak'
     developerName = 'Omar Aflak'
