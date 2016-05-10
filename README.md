@@ -31,9 +31,20 @@ Add the following line in your gradle dependencies:
 # Preview
 
 	TextureView textureView = (TextureView)findViewById(R.id.textureView);
-	    textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-	        @Override
-	        public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
-	            cam.startPreview(surfaceTexture, i, i1);
-	        }
+	textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+	    @Override
+	    public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+	        cam.startPreview(surfaceTexture, i, i1);
+	    }
 	});
+	
+# Take picture | stop/resume preview
+
+        // take picture
+        cam.takePicture();
+        // stop preview
+        cam.stopPreview();
+        // resume preview
+        cam.resumePreview();
+
+
