@@ -16,18 +16,19 @@ Add the following line in your gradle dependencies:
 # Callback
 
 	cam.setEZCamCallback(new EZCam.EZCamCallback() {
-    @Override
-    public void onPicture(ImageReader reader) {
-        // picture available
-        try {
-            cam.saveImage(reader, "image.jpeg");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void onError(String message) {
-        // error occurred
-    }
+	
+	    @Override
+	    public void onPicture(ImageReader reader) {
+	        // picture available
+	        try {
+	            cam.saveImage(reader, "image.jpeg");
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	        }
+	    }
+	
+	    @Override
+	    public void onError(String message) {
+	        // error occurred
+	    }
 	});
