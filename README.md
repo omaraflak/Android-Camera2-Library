@@ -42,8 +42,10 @@ Add the following line in your gradle dependencies:
 
 	// take picture
 	cam.takePicture();
+	
 	// stop preview
 	cam.stopPreview();
+	
 	// resume preview
 	cam.resumePreview();
 
