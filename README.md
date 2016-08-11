@@ -6,6 +6,10 @@ Simple library that allows you to display preview and take pictures easily with 
 Add the following line in your gradle dependencies:
 
 	compile 'me.aflak.libraries:ezcam:1.0'
+	
+# Permission
+
+	<uses-permission android:name="android.permission.CAMERA" />
   
 # In your Activity
 
