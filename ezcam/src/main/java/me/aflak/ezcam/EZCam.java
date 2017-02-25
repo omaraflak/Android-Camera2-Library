@@ -41,6 +41,7 @@ public class EZCam {
     private CameraCaptureSession cameraCaptureSession;
     private CaptureRequest.Builder captureRequestBuilder;
     private CaptureRequest.Builder captureRequestBuilderImageReader;
+    private CameraCharacteristics cameraCharacteristics;
     private ImageReader imageReader;
 
     public final static int FRONT = 0;
@@ -69,7 +70,8 @@ public class EZCam {
                 return null;
             }
 
-            StreamConfigurationMap scm = cameraManager.getCameraCharacteristics(currentCamera).get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            cameraCharacteristics = cameraManager.getCameraCharacteristics(currentCamera);
+            StreamConfigurationMap scm = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             if (scm != null) {
                 return scm.getOutputSizes(ImageFormat.JPEG);
             } else {
@@ -207,6 +209,7 @@ public class EZCam {
 
     public void takePicture(){
         captureRequestBuilderImageReader.addTarget(imageReader.getSurface());
+        captureRequestBuilderImageReader.set(CaptureRequest.JPEG_ORIENTATION, cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION));
         try {
             cameraCaptureSession.capture(captureRequestBuilderImageReader.build(), null, null);
         } catch (CameraAccessException e) {

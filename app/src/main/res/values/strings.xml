@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">EZCam</string>
+
+    <string name="activity_display_return">Return</string>
 </resources>

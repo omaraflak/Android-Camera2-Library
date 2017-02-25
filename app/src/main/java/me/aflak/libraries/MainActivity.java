@@ -1,5 +1,6 @@
 package me.aflak.libraries;
 
+import android.content.Intent;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraDevice;
 import android.media.ImageReader;
@@ -12,6 +13,9 @@ import android.view.TextureView;
 import android.view.View;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import me.aflak.ezcam.EZCam;
 import me.aflak.ezcam.EZCamCallback;
@@ -21,6 +25,7 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
     private EZCam cam;
     private Size[] sizes;
 
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss", Locale.getDefault());
     private final String TAG = "CAM";
 
     @Override
@@ -58,10 +63,10 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
 
     @Override
     public void onCameraOpened() {
-        Surface surface = new Surface(textureView.getSurfaceTexture());
-        int height = sizes[0].getHeight();
-        int width = sizes[0].getWidth();
-        cam.preparePreview(height, width, CameraDevice.TEMPLATE_PREVIEW, surface);
+        cam.preparePreview(sizes[0].getHeight(),
+                sizes[0].getWidth(),
+                CameraDevice.TEMPLATE_PREVIEW,
+                new Surface(textureView.getSurfaceTexture()));
     }
 
     @Override
@@ -79,9 +84,21 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
     public void onPicture(ImageReader imageReader) {
         cam.stopPreview();
         try {
-            cam.saveImage(imageReader, "image.jpg"); // save image to internal storage i.e. new File(getFilesDir(), "image.jpg")
+            String filename = "image_"+dateFormat.format(new Date())+".jpg"; // image_current_date.jpg
+            cam.saveImage(imageReader, filename); // save image to internal storage i.e. new File(getFilesDir(), "image.jpg")
+
+            Intent intent = new Intent(this, DisplayActivity.class);
+            intent.putExtra("filename", filename);
+            startActivity(intent);
+            finish();
         } catch (IOException e) {
             Log.e(TAG, e.getMessage());
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        cam.closeCamera();
     }
 }
