@@ -4,17 +4,16 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
-import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.Size;
 import android.view.Surface;
@@ -23,199 +22,244 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * Created by Omar on 31/12/2015.
+ * Created by Omar on 23/02/2017.
  */
+
 public class EZCam {
     private Context context;
-    private EZCamCallback listener = null;
+    private EZCamCallback cameraCallback;
 
     private CameraManager cameraManager;
     private CameraDevice cameraDevice;
-    private CaptureRequest.Builder request;
+    private String currentCamera;
+
     private CameraCaptureSession cameraCaptureSession;
-    private String selectedCamera;
+    private CaptureRequest.Builder captureRequestBuilder;
+    private CaptureRequest.Builder captureRequestBuilderImageReader;
+    private ImageReader imageReader;
 
-    private ImageReader jpegImageReader;
-    private Surface previewSurface;
-
-    public final static int FRONT = 1;
-    public final static int BACK = 2;
-
-    private final String CAM_DOES_NOT_EXIST = "No camera found for the specified id.";
-    private final String ERROR_OPENING_CAM = "Error occurred while opening the camera.";
-    private final String CAM_DISCONNECT = "Camera has been disconnected.";
-    private final String NO_PERMISSION = "You don't have the required permissions.";
-    private final String ERROR_CONFIG_SESSION = "Error occurred while configuring capture session.";
-    private final String FAIL_CAPTURE = "Capture session failed.";
-    private final String ERROR_GET_CHARACTERISTICS = "Could not get camera's characteristics.";
-
-    private boolean stopPreviewOnPicture=true;
-    private boolean isPreviewing=false;
+    public final static int FRONT = 0;
+    public final static int BACK = 1;
 
     public EZCam(Context context) {
         this.context = context;
-        cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        this.cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+    }
+
+    public void setCameraCallback(EZCamCallback cameraCallback) {
+        this.cameraCallback = cameraCallback;
     }
 
     public Size[] selectCamera(int id) {
-        String[] cameraId;
         try {
-            cameraId = cameraManager.getCameraIdList();
+            String[] camerasAvailable = cameraManager.getCameraIdList();
+            if (id == BACK) {
+                currentCamera = camerasAvailable[0];
+            }
+            else if (id == FRONT) {
+                currentCamera = camerasAvailable[1];
+            }
+            else{
+                notifyError("Camera id was not found.");
+                return null;
+            }
+
+            StreamConfigurationMap scm = cameraManager.getCameraCharacteristics(currentCamera).get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            if (scm != null) {
+                return scm.getOutputSizes(ImageFormat.JPEG);
+            } else {
+                notifyError("Could not get camera size preview.");
+            }
         } catch (CameraAccessException e) {
-            throwError(e.getMessage());
-            return null;
+            notifyError(e.getMessage());
         }
-        selectedCamera = null;
-
-        if (cameraId.length == 1) {
-            if (id == BACK)
-                selectedCamera = cameraId[0];
-        } else if (cameraId.length == 2) {
-            if (id == BACK)
-                selectedCamera = cameraId[0];
-            else
-                selectedCamera = cameraId[1];
-        }
-
-        if (selectedCamera == null) {
-            throwError(CAM_DOES_NOT_EXIST);
-            return null;
-        }
-
-        CameraCharacteristics cc;
-        try {
-            cc = cameraManager.getCameraCharacteristics(selectedCamera);
-        } catch (CameraAccessException e) {
-            throwError(e.getMessage());
-            return null;
-        }
-        StreamConfigurationMap streamConfigs = cc.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-
-        if (streamConfigs == null) {
-            throwError(ERROR_GET_CHARACTERISTICS);
-            return null;
-        }
-        return streamConfigs.getOutputSizes(ImageFormat.JPEG);
+        return null;
     }
 
-    public void startPreview(SurfaceTexture surfaceTexture, final int width, final int height)  {
-        surfaceTexture.setDefaultBufferSize(width, height);
-        previewSurface = new Surface(surfaceTexture);
-        jpegImageReader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
-        jpegImageReader.setOnImageAvailableListener(jpegListener, null);
+    public void openCamera() {
+        if(!checkCameraId()){
+            return;
+        }
 
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            throwError(NO_PERMISSION);
+            notifyError("You don't have the required permissions.");
+            return;
+        }
+        try {
+            cameraManager.openCamera(currentCamera, new CameraDevice.StateCallback() {
+                @Override
+                public void onOpened(@NonNull CameraDevice camera) {
+                    cameraDevice = camera;
+                    if(cameraCallback != null){
+                        cameraCallback.onCameraOpened();
+                    }
+                }
+
+                @Override
+                public void onDisconnected(@NonNull CameraDevice camera) {
+                    if(cameraCallback != null){
+                        cameraCallback.onError("Camera device is no longer available for use.");
+                        cameraCallback.onCameraDisconnected();
+                    }
+                }
+
+                @Override
+                public void onError(@NonNull CameraDevice camera, int error) {
+                    switch (error){
+                        case CameraDevice.StateCallback.ERROR_CAMERA_DEVICE:
+                            notifyError("Camera device has encountered a fatal error.");
+                            break;
+                        case CameraDevice.StateCallback.ERROR_CAMERA_DISABLED:
+                            notifyError("Camera device could not be opened due to a device policy.");
+                            break;
+                        case CameraDevice.StateCallback.ERROR_CAMERA_IN_USE:
+                            notifyError("Camera device is in use already.");
+                            break;
+                        case CameraDevice.StateCallback.ERROR_CAMERA_SERVICE:
+                            notifyError("Camera service has encountered a fatal error.");
+                            break;
+                        case CameraDevice.StateCallback.ERROR_MAX_CAMERAS_IN_USE:
+                            notifyError("Camera device could not be opened because there are too many other open camera devices.");
+                            break;
+                    }
+                }
+            }, null);
+        } catch (CameraAccessException e) {
+            notifyError("Could not open camera. May be used by another application.");
+        }
+    }
+
+    public void preparePreview(int height, int width, int templateType, Surface ...outputSurface) {
+        if(!checkCameraDevice()){
+            return;
+        }
+
+        imageReader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
+        imageReader.setOnImageAvailableListener(onImageAvailable, null);
+
+        try {
+            captureRequestBuilder = cameraDevice.createCaptureRequest(templateType);
+            for(Surface surface : outputSurface) {
+                captureRequestBuilder.addTarget(surface);
+            }
+
+            captureRequestBuilderImageReader = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+
+            List<Surface> surfaceList = new ArrayList<>();
+            surfaceList.add(imageReader.getSurface());
+            Collections.addAll(surfaceList, outputSurface);
+
+            cameraDevice.createCaptureSession(surfaceList, new CameraCaptureSession.StateCallback() {
+                @Override
+                public void onConfigured(@NonNull CameraCaptureSession session) {
+                    cameraCaptureSession = session;
+                    if(cameraCallback != null){
+                        cameraCallback.onPreviewReady();
+                    }
+                }
+
+                @Override
+                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+                    notifyError("Could not configure capture session.");
+                }
+            }, null);
+        } catch (CameraAccessException e) {
+            notifyError(e.getMessage());
+        }
+    }
+
+    public void startPreview(){
+        if(!checkCaptureSession()){
             return;
         }
 
         try {
-            cameraManager.openCamera(selectedCamera, openCallback, null);
+            cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
         } catch (CameraAccessException e) {
-            throwError(e.getMessage());
+            notifyError(e.getMessage());
         }
     }
 
-    public void stopPreview() {
-        if(isPreviewing) {
-            try {
-                cameraCaptureSession.stopRepeating();
-            } catch (CameraAccessException e) {
-                throwError(e.getMessage());
-                return;
-            }
-            isPreviewing=false;
+    public void stopPreview(){
+        if(!checkCaptureRequest()){
+            return;
         }
+
+        try {
+            cameraCaptureSession.stopRepeating();
+        } catch (CameraAccessException e) {
+            notifyError(e.getMessage());
+        }
+    }
+
+    public void closeCamera(){
+        if(!checkCameraDevice()){
+            return;
+        }
+
         cameraDevice.close();
     }
 
-    public void resumePreview() {
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            throwError(NO_PERMISSION);
-            return;
-        }
+    public void takePicture(){
+        captureRequestBuilderImageReader.addTarget(imageReader.getSurface());
         try {
-            cameraManager.openCamera(selectedCamera, openCallback, null);
+            cameraCaptureSession.capture(captureRequestBuilderImageReader.build(), null, null);
         } catch (CameraAccessException e) {
-            throwError(e.getMessage());
+            notifyError(e.getMessage());
         }
     }
 
-    public void takePicture() {
-        request.addTarget(jpegImageReader.getSurface());
-        try {
-            cameraCaptureSession.capture(request.build(), captureCallback, null);
-        } catch (CameraAccessException e) {
-            throwError(e.getMessage());
+    private ImageReader.OnImageAvailableListener onImageAvailable = new ImageReader.OnImageAvailableListener() {
+        @Override
+        public void onImageAvailable(ImageReader reader) {
+            captureRequestBuilderImageReader.removeTarget(imageReader.getSurface());
+            if(cameraCallback != null){
+                cameraCallback.onPicture(imageReader);
+            }
         }
+    };
+
+    private boolean checkCameraId(){
+        if(currentCamera == null){
+            notifyError("selectCamera() has not been called.");
+            return false;
+        }
+        return true;
     }
 
-    private CameraDevice.StateCallback openCallback = new CameraDevice.StateCallback() {
-        @Override
-        public void onOpened(CameraDevice cameraDevice) {
-            EZCam.this.cameraDevice=cameraDevice;
-            try {
-                cameraDevice.createCaptureSession(Arrays.asList(previewSurface, jpegImageReader.getSurface()), captureSessionCallback, null);
-            } catch (CameraAccessException e) {
-                throwError(e.getMessage());
-            }
+    private boolean checkCameraDevice(){
+        if(cameraDevice == null){
+            notifyError("openCamera() has not been called.");
+            return false;
         }
+        return true;
+    }
 
-        @Override
-        public void onDisconnected(CameraDevice cameraDevice) {
-            throwError(ERROR_OPENING_CAM);
+    private boolean checkCaptureSession(){
+        if(cameraCaptureSession == null){
+            notifyError("preparePreview() has not been called.");
+            return false;
         }
+        return true;
+    }
 
-        @Override
-        public void onError(CameraDevice cameraDevice, int i) {
-            throwError(CAM_DISCONNECT);
+    private boolean checkCaptureRequest(){
+        if(captureRequestBuilder == null){
+            notifyError("startPreview() has not been called.");
+            return false;
         }
-    };
+        return true;
+    }
 
-    private CameraCaptureSession.StateCallback captureSessionCallback = new CameraCaptureSession.StateCallback() {
-        @Override
-        public void onConfigured(CameraCaptureSession cameraCaptureSession) {
-            try {
-                EZCam.this.cameraCaptureSession = cameraCaptureSession;
-                request = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                request.addTarget(previewSurface);
-                cameraCaptureSession.setRepeatingRequest(request.build(), captureCallback, null);
-                isPreviewing=true;
-            } catch (CameraAccessException e) {
-                throwError(e.getMessage());
-            }
+    private void notifyError(String message) {
+        if (cameraCallback != null) {
+            cameraCallback.onError(message);
         }
-
-        @Override
-        public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
-            throwError(ERROR_CONFIG_SESSION);
-        }
-    };
-
-    private CameraCaptureSession.CaptureCallback captureCallback = new CameraCaptureSession.CaptureCallback() {
-        @Override
-        public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request, CaptureFailure failure) {
-            throwError(FAIL_CAPTURE);
-        }
-    };
-
-    private ImageReader.OnImageAvailableListener jpegListener = new ImageReader.OnImageAvailableListener() {
-        @Override
-        public void onImageAvailable(ImageReader imageReader) {
-            request.removeTarget(jpegImageReader.getSurface());
-            if(stopPreviewOnPicture) {
-                stopPreview();
-            }
-            if(listener!=null)
-                listener.onPicture(imageReader);
-        }
-    };
-
-    public void setStopPreviewOnPicture(boolean enabled){
-        this.stopPreviewOnPicture=enabled;
     }
 
     public File saveImage(ImageReader imageReader, String filename) throws IOException {
@@ -233,24 +277,5 @@ public class EZCam {
         image.close();
         output.close();
         return file;
-    }
-
-    public void throwError(String message){
-        if(listener!=null){
-            listener.onError(message);
-        }
-    }
-
-    public void setEZCamCallback(EZCamCallback listener){
-        this.listener=listener;
-    }
-
-    public void removeEZCamCallback(){
-        this.listener=null;
-    }
-
-    public interface EZCamCallback{
-        void onPicture(ImageReader reader);
-        void onError(String message);
     }
 }
