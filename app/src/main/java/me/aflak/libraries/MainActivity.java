@@ -36,7 +36,6 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
         textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                textureView.setOnClickListener(MainActivity.this);
                 sizes = cam.selectCamera(EZCam.FRONT);
                 cam.openCamera(); // needs android.permission.CAMERA
             }
@@ -73,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
     @Override
     public void onPreviewReady() {
         cam.startPreview();
+        textureView.setOnClickListener(this);
     }
 
     @Override
