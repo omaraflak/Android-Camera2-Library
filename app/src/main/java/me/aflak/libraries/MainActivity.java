@@ -41,16 +41,9 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
                 cam.openCamera(); // needs android.permission.CAMERA
             }
 
-            @Override
-            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {}
-
-            @Override
-            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-                return false;
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(SurfaceTexture surface) {}
+            @Override public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {}
+            @Override public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {return false;}
+            @Override public void onSurfaceTextureUpdated(SurfaceTexture surface) {}
         });
     }
 
