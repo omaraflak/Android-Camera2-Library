@@ -9,7 +9,7 @@ Add the following line in your gradle dependencies:
 
 # See sample
 
-	**https://github.com/omaflak/Android-Camera2-Library/blob/master/app/src/main/java/me/aflak/libraries/MainActivity.java**
+**https://github.com/omaflak/Android-Camera2-Library/blob/master/app/src/main/java/me/aflak/libraries/MainActivity.java**
 
 # EZCam
 
