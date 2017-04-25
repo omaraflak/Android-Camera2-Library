@@ -22,16 +22,15 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
 import me.aflak.ezcam.EZCam;
 import me.aflak.ezcam.EZCamCallback;
 
 public class MainActivity extends AppCompatActivity implements EZCamCallback, View.OnClickListener{
-    @BindView(R.id.textureView) TextureView textureView;
+    private TextureView textureView;
 
     private EZCam cam;
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss", Locale.getDefault());
+    private SimpleDateFormat dateFormat;
+
     private final String TAG = "CAM";
 
     @Override
@@ -39,7 +38,8 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ButterKnife.bind(this);
+        textureView = (TextureView)findViewById(R.id.textureView);
+        dateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss", Locale.getDefault());
 
         cam = new EZCam(this);
         cam.setCameraCallback(this);

@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 25
-    buildToolsVersion '25.0.1'
+    buildToolsVersion '25.0.2'
 
     defaultConfig {
         applicationId "me.aflak.libraries"
@@ -25,12 +25,8 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile project(path: ':ezcam')
 
-    // butter knife
-    compile 'com.jakewharton:butterknife:8.5.1'
-    annotationProcessor 'com.jakewharton:butterknife-compiler:8.5.1'
-
     // dexter
-    compile 'com.karumi:dexter:4.0.0'
+    compile 'com.karumi:dexter:4.1.0'
 
     // glide
     compile 'com.github.bumptech.glide:glide:3.7.0'

@@ -5,7 +5,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
-import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -19,9 +18,7 @@ import android.media.ImageReader;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.Size;
-import android.view.Display;
 import android.view.Gravity;
 import android.view.Surface;
 import android.view.TextureView;
@@ -70,8 +67,6 @@ public class EZCam {
         ((Activity)context).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         SCREEN_HEIGHT = displayMetrics.heightPixels;
         SCREEN_WIDTH = displayMetrics.widthPixels;
-
-        Log.e("SCREEN", SCREEN_WIDTH+":"+SCREEN_HEIGHT);
     }
 
     public void setCameraCallback(EZCamCallback cameraCallback) {
@@ -251,9 +246,6 @@ public class EZCam {
         }
 
         textureView.setLayoutParams(new FrameLayout.LayoutParams(newWidth, newHeight, Gravity.CENTER));
-
-        Log.e("NEW DIM", newWidth+":"+newHeight);
-        Log.e("PREVIEW", previewSize.getWidth()+":"+previewSize.getHeight());
     }
 
     private void setupPreview_(int templateType, SurfaceTexture surfaceTexture){
