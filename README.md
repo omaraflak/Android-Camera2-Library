@@ -1,7 +1,7 @@
 # Android Camera2 Library
 Simple library that allows you to display preview and take pictures easily with callbacks!
 
-# Install
+# Gradle
 
 Add the following line in your gradle dependencies:
 
