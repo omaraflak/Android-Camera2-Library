@@ -5,7 +5,7 @@ Simple library that allows you to display preview and take pictures easily with 
 
 Add the following line in your gradle dependencies:
 
-	compile 'me.aflak.libraries:ezcam:2.0'
+	compile 'me.aflak.libraries:ezcam:2.2'
 
 # See sample
 
@@ -14,19 +14,20 @@ Add the following line in your gradle dependencies:
 # EZCam
 
     EZCam cam = new EZCam(Context);
-    Size[] sizes = cam.selectCamera(EZCam.FRONT); // sizes contains the available preview sizes for the camera selected
+    cam.selectCamera(cam.getCamerasList().get(EZCam.BACK)); // should first verify if the list contains EZCam.BACK...
 
 # Callback
 
     cam.setCameraCallback(new EZCamCallback() {
         @Override
         public void onError(String message) {
-            // all errors will be passed through this methods
+            	// all errors will be passed through this methods
         }
 
         @Override
         public void onCameraOpened() {
-        	// triggered after cam.openCamera()
+        	// triggered after cam.open()
+		cam.setupPreview(CameraDevice.TEMPLATE_PREVIEW, textureView);
         }
 
         @Override
@@ -36,7 +37,7 @@ Add the following line in your gradle dependencies:
 
         @Override
         public void onPreviewReady() {
-        	// triggered after cam.preparePreview()
+        	// triggered after cam.setupPreview(...)
         	cam.startPreview();
         }
 
@@ -46,10 +47,9 @@ Add the following line in your gradle dependencies:
         }
     });
 	
-# Open Camera & setup Preview
+# Open Camera
 
-	cam.openCamera(); // needs android.permission.CAMERA
-	cam.preparePreview(height, width, CameraDevice.TEMPLATE_PREVIEW, surface);
+	cam.open(); // needs android.permission.CAMERA
 	
 # Take picture | stop preview | close camera 
 
