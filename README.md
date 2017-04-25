@@ -1,5 +1,5 @@
 # Android Camera2 Library
-Simple library that allows you to display preview and take pictures easily with callbacks!
+Library that allows you to display preview and take pictures easily with camera2 !
 
 # Dependencie
 
