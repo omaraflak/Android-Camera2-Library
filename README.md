@@ -21,7 +21,7 @@ Add the following line in your gradle dependencies:
     cam.setCameraCallback(new EZCamCallback() {
         @Override
         public void onError(String message) {
-            	// all errors will be passed through this methods
+            // all errors will be passed through this methods
         }
 
         @Override
