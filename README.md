@@ -1,11 +1,20 @@
 # Android Camera2 Library
 Simple library that allows you to display preview and take pictures easily with callbacks!
 
-# Gradle
+# Dependencie
 
-Add the following line in your gradle dependencies:
+Add the following line in your gradle dependencies :
 
 	compile 'me.aflak.libraries:ezcam:2.1'
+
+Or if you use Maven :
+
+	<dependency>
+	  <groupId>me.aflak.libraries</groupId>
+	  <artifactId>ezcam</artifactId>
+	  <version>2.1</version>
+	  <type>pom</type>
+	</dependency>
 
 # What's new in 2.1 ?
 
