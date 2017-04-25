@@ -7,6 +7,13 @@ Add the following line in your gradle dependencies:
 
 	compile 'me.aflak.libraries:ezcam:2.1'
 
+# What is new in 2.1 ?
+
+- full support of portrait mode (landscape coming)
+- don't need to pass an available textureview, the lib will wait for it
+- get cameras list
+- some bugs fixed...
+
 # See sample
 
 **https://github.com/omaflak/Android-Camera2-Library/blob/master/app/src/main/java/me/aflak/libraries/MainActivity.java**
