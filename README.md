@@ -5,7 +5,7 @@ Simple library that allows you to display preview and take pictures easily with 
 
 Add the following line in your gradle dependencies:
 
-	compile 'me.aflak.libraries:ezcam:2.2'
+	compile 'me.aflak.libraries:ezcam:2.1'
 
 # See sample
 
