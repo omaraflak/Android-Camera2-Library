@@ -1,30 +1,36 @@
 package me.aflak.libraries;
 
+import android.Manifest;
 import android.content.Intent;
-import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraDevice;
 import android.media.ImageReader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.Size;
-import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+
+import com.karumi.dexter.Dexter;
+import com.karumi.dexter.PermissionToken;
+import com.karumi.dexter.listener.PermissionDeniedResponse;
+import com.karumi.dexter.listener.PermissionGrantedResponse;
+import com.karumi.dexter.listener.PermissionRequest;
+import com.karumi.dexter.listener.single.PermissionListener;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import me.aflak.ezcam.EZCam;
 import me.aflak.ezcam.EZCamCallback;
 
 public class MainActivity extends AppCompatActivity implements EZCamCallback, View.OnClickListener{
-    private TextureView textureView;
-    private EZCam cam;
-    private Size[] sizes;
+    @BindView(R.id.textureView) TextureView textureView;
 
+    private EZCam cam;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss", Locale.getDefault());
     private final String TAG = "CAM";
 
@@ -33,22 +39,28 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        ButterKnife.bind(this);
+
         cam = new EZCam(this);
         cam.setCameraCallback(this);
+        cam.selectCamera(cam.getCamerasList().get(EZCam.BACK));
 
-        textureView = (TextureView) findViewById(R.id.textureView);
-
-        textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+        Dexter.withActivity(MainActivity.this).withPermission(Manifest.permission.CAMERA).withListener(new PermissionListener() {
             @Override
-            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                sizes = cam.selectCamera(EZCam.FRONT);
-                cam.openCamera(); // needs android.permission.CAMERA
+            public void onPermissionGranted(PermissionGrantedResponse response) {
+                cam.open();
             }
 
-            @Override public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {}
-            @Override public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {return false;}
-            @Override public void onSurfaceTextureUpdated(SurfaceTexture surface) {}
-        });
+            @Override
+            public void onPermissionDenied(PermissionDeniedResponse response) {
+                Log.e(TAG, "permission denied");
+            }
+
+            @Override
+            public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
+                token.continuePermissionRequest();
+            }
+        }).check();
     }
 
     @Override
@@ -63,10 +75,7 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
 
     @Override
     public void onCameraOpened() {
-        cam.preparePreview(sizes[0].getHeight(),
-                sizes[0].getWidth(),
-                CameraDevice.TEMPLATE_PREVIEW,
-                new Surface(textureView.getSurfaceTexture()));
+        cam.setupPreview(CameraDevice.TEMPLATE_PREVIEW, textureView);
     }
 
     @Override
@@ -99,6 +108,6 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        cam.closeCamera();
+        cam.close();
     }
 }

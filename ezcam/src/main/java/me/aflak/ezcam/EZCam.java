@@ -1,9 +1,12 @@
 package me.aflak.ezcam;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
+import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -15,16 +18,23 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.Size;
+import android.view.Display;
+import android.view.Gravity;
 import android.view.Surface;
+import android.view.TextureView;
+import android.widget.FrameLayout;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by Omar on 23/02/2017.
@@ -37,53 +47,88 @@ public class EZCam {
     private CameraManager cameraManager;
     private CameraDevice cameraDevice;
     private String currentCamera;
+    private Size previewSize;
 
     private CameraCaptureSession cameraCaptureSession;
+    private CameraCharacteristics cameraCharacteristics;
     private CaptureRequest.Builder captureRequestBuilder;
     private CaptureRequest.Builder captureRequestBuilderImageReader;
-    private CameraCharacteristics cameraCharacteristics;
     private ImageReader imageReader;
 
-    public final static int FRONT = 0;
-    public final static int BACK = 1;
+    private final int SCREEN_HEIGHT;
+    private final int SCREEN_WIDTH;
+
+    public static final String FRONT = "FRONT";
+    public static final String BACK = "BACK";
+    public static final String EXTERNAL = "EXTERNAL";
 
     public EZCam(Context context) {
         this.context = context;
         this.cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        ((Activity)context).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        SCREEN_HEIGHT = displayMetrics.heightPixels;
+        SCREEN_WIDTH = displayMetrics.widthPixels;
+
+        Log.e("SCREEN", SCREEN_WIDTH+":"+SCREEN_HEIGHT);
     }
 
     public void setCameraCallback(EZCamCallback cameraCallback) {
         this.cameraCallback = cameraCallback;
     }
 
-    public Size[] selectCamera(int id) {
+    public Map<String, String> getCamerasList(){
+        Map<String, String> map = new HashMap<>();
         try {
             String[] camerasAvailable = cameraManager.getCameraIdList();
-            if (id == BACK) {
-                currentCamera = camerasAvailable[0];
-            }
-            else if (id == FRONT) {
-                currentCamera = camerasAvailable[1];
-            }
-            else{
-                notifyError("Camera id was not found.");
-                return null;
-            }
+            CameraCharacteristics cam;
+            Integer characteristic;
+            for (String id : camerasAvailable){
+                cam = cameraManager.getCameraCharacteristics(id);
+                characteristic = cam.get(CameraCharacteristics.LENS_FACING);
+                if (characteristic!=null){
+                    switch (characteristic){
+                        case CameraCharacteristics.LENS_FACING_FRONT:
+                            map.put(FRONT, id);
+                            break;
 
-            cameraCharacteristics = cameraManager.getCameraCharacteristics(currentCamera);
-            StreamConfigurationMap scm = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-            if (scm != null) {
-                return scm.getOutputSizes(ImageFormat.JPEG);
-            } else {
-                notifyError("Could not get camera size preview.");
+                        case CameraCharacteristics.LENS_FACING_BACK:
+                            map.put(BACK, id);
+                            break;
+
+                        case CameraCharacteristics.LENS_FACING_EXTERNAL:
+                            map.put(EXTERNAL, id);
+                            break;
+                    }
+                }
             }
+            return map;
         } catch (CameraAccessException e) {
-            notifyError(e.getMessage());
+            notifyError(e.getLocalizedMessage());
+            return null;
         }
-        return null;
     }
 
-    public void openCamera() {
+    public void selectCamera(String id) {
+        try {
+            currentCamera = id;
+            cameraCharacteristics = cameraManager.getCameraCharacteristics(currentCamera);
+            StreamConfigurationMap map = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            if(map != null) {
+                previewSize = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new CompareSizesByArea());
+                imageReader = ImageReader.newInstance(previewSize.getWidth(), previewSize.getHeight(), ImageFormat.JPEG, 1);
+                imageReader.setOnImageAvailableListener(onImageAvailable, null);
+            }
+            else{
+                notifyError("Could not get configuration map.");
+            }
+        } catch (CameraAccessException e) {
+            notifyError(e.getLocalizedMessage());
+        }
+    }
+
+    public void open() {
         if(!checkCameraId()){
             return;
         }
@@ -92,6 +137,7 @@ public class EZCam {
             notifyError("You don't have the required permissions.");
             return;
         }
+
         try {
             cameraManager.openCamera(currentCamera, new CameraDevice.StateCallback() {
                 @Override
@@ -136,27 +182,91 @@ public class EZCam {
         }
     }
 
-    public void preparePreview(int height, int width, int templateType, Surface ...outputSurface) {
+    public void setupPreview(final int templateType, final TextureView outputSurface) {
         if(!checkCameraDevice()){
             return;
         }
 
-        imageReader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
-        imageReader.setOnImageAvailableListener(onImageAvailable, null);
+        if(outputSurface.isAvailable()){
+            setupPreview_(templateType, outputSurface.getSurfaceTexture());
+        }
+        else{
+            outputSurface.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+                @Override
+                public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                    setAspectRatioTextureView(previewSize, outputSurface);
+                    setupPreview_(templateType, surface);
+                }
+
+                public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {}
+                public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {return false;}
+                public void onSurfaceTextureUpdated(SurfaceTexture surface) {}
+            });
+        }
+    }
+
+    private void setAspectRatioTextureView(Size previewSize, TextureView textureView)
+    {
+        int rotation = ((Activity)context).getWindowManager().getDefaultDisplay().getRotation();
+        int newWidth=previewSize.getWidth(), newHeight=previewSize.getHeight();
+
+        textureView.setPivotX(textureView.getWidth() / 2);
+        textureView.setPivotY(textureView.getHeight() / 2);
+
+        switch (rotation) {
+            case Surface.ROTATION_0: // portrait
+                newWidth = SCREEN_WIDTH;
+                newHeight = (SCREEN_WIDTH * previewSize.getWidth() / previewSize.getHeight());
+                break;
+
+            case Surface.ROTATION_180: // weird...
+                newWidth = SCREEN_WIDTH;
+                newHeight = (SCREEN_WIDTH * previewSize.getWidth() / previewSize.getHeight());
+                textureView.setRotation(180);
+                break;
+
+            case Surface.ROTATION_90: // rotate to left
+                if(previewSize.getHeight()-SCREEN_HEIGHT > previewSize.getWidth()-SCREEN_WIDTH) {
+                    newWidth = (SCREEN_HEIGHT * previewSize.getWidth() / previewSize.getHeight());
+                    newHeight = SCREEN_HEIGHT;
+                }
+                else{
+                    newWidth = SCREEN_WIDTH;
+                    newHeight = (SCREEN_WIDTH * previewSize.getHeight() / previewSize.getWidth());
+                }
+                textureView.setRotation(270);
+                break;
+
+            case Surface.ROTATION_270: // rotate to right
+                if(previewSize.getHeight()-SCREEN_HEIGHT > previewSize.getWidth()-SCREEN_WIDTH) {
+                    newWidth = (SCREEN_HEIGHT * previewSize.getWidth() / previewSize.getHeight());
+                    newHeight = SCREEN_HEIGHT;
+                }
+                else{
+                    newWidth = SCREEN_WIDTH;
+                    newHeight = (SCREEN_WIDTH * previewSize.getHeight() / previewSize.getWidth());
+                }
+                textureView.setRotation(90);
+                break;
+        }
+
+        textureView.setLayoutParams(new FrameLayout.LayoutParams(newWidth, newHeight, Gravity.CENTER));
+
+        Log.e("NEW DIM", newWidth+":"+newHeight);
+        Log.e("PREVIEW", previewSize.getWidth()+":"+previewSize.getHeight());
+    }
+
+    private void setupPreview_(int templateType, SurfaceTexture surfaceTexture){
+        Surface surface = new Surface(surfaceTexture);
 
         try {
             captureRequestBuilder = cameraDevice.createCaptureRequest(templateType);
-            for(Surface surface : outputSurface) {
-                captureRequestBuilder.addTarget(surface);
-            }
+            captureRequestBuilder.addTarget(surface);
 
             captureRequestBuilderImageReader = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            captureRequestBuilderImageReader.addTarget(imageReader.getSurface());
 
-            List<Surface> surfaceList = new ArrayList<>();
-            surfaceList.add(imageReader.getSurface());
-            Collections.addAll(surfaceList, outputSurface);
-
-            cameraDevice.createCaptureSession(surfaceList, new CameraCaptureSession.StateCallback() {
+            cameraDevice.createCaptureSession(Arrays.asList(surface, imageReader.getSurface()), new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     cameraCaptureSession = session;
@@ -171,7 +281,7 @@ public class EZCam {
                 }
             }, null);
         } catch (CameraAccessException e) {
-            notifyError(e.getMessage());
+            notifyError(e.getLocalizedMessage());
         }
     }
 
@@ -183,7 +293,7 @@ public class EZCam {
         try {
             cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
         } catch (CameraAccessException e) {
-            notifyError(e.getMessage());
+            notifyError(e.getLocalizedMessage());
         }
     }
 
@@ -195,11 +305,11 @@ public class EZCam {
         try {
             cameraCaptureSession.stopRepeating();
         } catch (CameraAccessException e) {
-            notifyError(e.getMessage());
+            notifyError(e.getLocalizedMessage());
         }
     }
 
-    public void closeCamera(){
+    public void close(){
         if(!checkCameraDevice()){
             return;
         }
@@ -208,19 +318,17 @@ public class EZCam {
     }
 
     public void takePicture(){
-        captureRequestBuilderImageReader.addTarget(imageReader.getSurface());
         captureRequestBuilderImageReader.set(CaptureRequest.JPEG_ORIENTATION, cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION));
         try {
             cameraCaptureSession.capture(captureRequestBuilderImageReader.build(), null, null);
         } catch (CameraAccessException e) {
-            notifyError(e.getMessage());
+            notifyError(e.getLocalizedMessage());
         }
     }
 
     private ImageReader.OnImageAvailableListener onImageAvailable = new ImageReader.OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader reader) {
-            captureRequestBuilderImageReader.removeTarget(imageReader.getSurface());
             if(cameraCallback != null){
                 cameraCallback.onPicture(imageReader);
             }
