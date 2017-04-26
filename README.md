@@ -12,7 +12,7 @@ Or if you use Maven :
 	<dependency>
 	  <groupId>me.aflak.libraries</groupId>
 	  <artifactId>ezcam</artifactId>
-	  <version>2.1</version>
+	  <version>2.2</version>
 	  <type>pom</type>
 	</dependency>
 
