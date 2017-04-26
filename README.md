@@ -16,13 +16,6 @@ Or if you use Maven :
 	  <type>pom</type>
 	</dependency>
 
-# What's new in 2.1 ?
-
-- full support of portrait mode (landscape coming)
-- don't need to pass an available textureview, the lib will wait for it
-- get cameras list
-- some bugs fixed...
-
 # See sample
 
 **https://github.com/omaflak/Android-Camera2-Library/blob/master/app/src/main/java/me/aflak/libraries/MainActivity.java**
@@ -49,25 +42,12 @@ Or if you use Maven :
 # Callback
 
     cam.setCameraCallback(new EZCamCallback() {
-        @Override
-        public void onError(String message) {
-            // all errors will be passed through this methods
-        }
-
-        @Override
-        public void onCameraOpened() {
-        	// triggered after cam.open()
-		cam.setupPreview(CameraDevice.TEMPLATE_PREVIEW, textureView);
-        }
-
-        @Override
-        public void onCameraDisconnected() {
-        	// camera disconnected
-        }
-
-        @Override
-        public void onPreviewReady() {
-        	// triggered after cam.setupPreview(...)
+    	@Override
+        public void onCameraReady() {
+        	// triggered after cam.open(...)
+        	// you can set capture settings for example:
+        	cam.setCaptureSetting(CaptureRequest.CONTROL_EFFECT_MODE, CameraMetadata.CONTROL_EFFECT_MODE_NEGATIVE);
+        	// then start the preview
         	cam.startPreview();
         }
 
@@ -75,11 +55,21 @@ Or if you use Maven :
         public void onPicture(ImageReader imageReader) {
         	cam.saveImage(imageReader, "image.jpg"); // will save image to internal storage
         }
+
+        @Override
+        public void onError(String message) {
+            // all errors will be passed through this methods
+        }
+
+        @Override
+        public void onCameraDisconnected() {
+        	// camera disconnected
+        }
     });
 	
 # Open Camera
 
-	cam.open(); // needs android.permission.CAMERA
+	cam.open(CameraDevice.TEMPLATE_PREVIEW, textureView); // needs android.permission.CAMERA
 	
 # Take picture | stop preview | close camera 
 
@@ -88,3 +78,9 @@ Or if you use Maven :
 	cam.stopPreview();
 
 	cam.close();
+
+# TODO
+
+- Support for landscape mode
+- Apply custom filters
+- Recording videos

@@ -73,8 +73,8 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
 
     @Override
     public void onCameraReady() {
-        cam.setPreviewParameter(CaptureRequest.COLOR_CORRECTION_ABERRATION_MODE, CameraMetadata.COLOR_CORRECTION_ABERRATION_MODE_HIGH_QUALITY);
-        cam.setPreviewParameter(CaptureRequest.CONTROL_EFFECT_MODE, CameraMetadata.CONTROL_EFFECT_MODE_NEGATIVE);
+        cam.setCaptureSetting(CaptureRequest.COLOR_CORRECTION_ABERRATION_MODE, CameraMetadata.COLOR_CORRECTION_ABERRATION_MODE_HIGH_QUALITY);
+        cam.setCaptureSetting(CaptureRequest.CONTROL_EFFECT_MODE, CameraMetadata.CONTROL_EFFECT_MODE_NEGATIVE);
         cam.startPreview();
 
         textureView.setOnClickListener(this);
@@ -95,7 +95,6 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
             Log.e(TAG, e.getMessage());
         }
     }
-
 
     @Override
     public void onCameraDisconnected() {

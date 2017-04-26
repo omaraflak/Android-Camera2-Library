@@ -228,7 +228,7 @@ public class EZCam {
         }
     }
 
-    public void setPreviewParameter(CaptureRequest.Key<Integer> key, Integer value){
+    public void setCaptureSetting(CaptureRequest.Key<Integer> key, Integer value){
         captureRequestBuilder.set(key, value);
         captureRequestBuilderImageReader.set(key, value);
     }
