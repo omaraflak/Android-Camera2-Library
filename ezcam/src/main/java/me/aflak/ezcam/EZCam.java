@@ -18,6 +18,7 @@ import android.media.ImageReader;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
 import android.view.Gravity;
@@ -129,10 +130,6 @@ public class EZCam {
     }
 
     public void open(final int templateType, final TextureView textureView) {
-        if(!checkCameraId()){
-            return;
-        }
-
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             notifyError("You don't have the required permissions.");
             return;
@@ -282,10 +279,6 @@ public class EZCam {
     }
 
     public void startPreview(){
-        if(!checkCameraDevice()){
-            return;
-        }
-
         try {
             cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
         } catch (CameraAccessException e) {
@@ -302,10 +295,6 @@ public class EZCam {
     }
 
     public void close(){
-        if(!checkCameraDevice()){
-            return;
-        }
-
         cameraDevice.close();
     }
 
@@ -326,22 +315,6 @@ public class EZCam {
             }
         }
     };
-
-    private boolean checkCameraId(){
-        if(currentCamera == null){
-            notifyError("selectCamera() has not been called.");
-            return false;
-        }
-        return true;
-    }
-
-    private boolean checkCameraDevice(){
-        if(cameraDevice == null){
-            notifyError("openCamera() has not been called.");
-            return false;
-        }
-        return true;
-    }
 
     private void notifyError(String message) {
         if (cameraCallback != null) {
