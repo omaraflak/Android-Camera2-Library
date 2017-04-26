@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.Intent;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.CaptureRequest;
 import android.media.ImageReader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -49,7 +51,7 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
         Dexter.withActivity(MainActivity.this).withPermission(Manifest.permission.CAMERA).withListener(new PermissionListener() {
             @Override
             public void onPermissionGranted(PermissionGrantedResponse response) {
-                cam.open();
+                cam.open(CameraDevice.TEMPLATE_PREVIEW, textureView);
             }
 
             @Override
@@ -70,23 +72,11 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
     }
 
     @Override
-    public void onError(String message) {
-        Log.e(TAG, message);
-    }
-
-    @Override
-    public void onCameraOpened() {
-        cam.setupPreview(CameraDevice.TEMPLATE_PREVIEW, textureView);
-    }
-
-    @Override
-    public void onCameraDisconnected() {
-        Log.e(TAG, "Camera disconnected");
-    }
-
-    @Override
-    public void onPreviewReady() {
+    public void onCameraReady() {
+        cam.setPreviewParameter(CaptureRequest.COLOR_CORRECTION_ABERRATION_MODE, CameraMetadata.COLOR_CORRECTION_ABERRATION_MODE_HIGH_QUALITY);
+        cam.setPreviewParameter(CaptureRequest.CONTROL_EFFECT_MODE, CameraMetadata.CONTROL_EFFECT_MODE_NEGATIVE);
         cam.startPreview();
+
         textureView.setOnClickListener(this);
     }
 
@@ -104,6 +94,17 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
         } catch (IOException e) {
             Log.e(TAG, e.getMessage());
         }
+    }
+
+
+    @Override
+    public void onCameraDisconnected() {
+        Log.e(TAG, "Camera disconnected");
+    }
+
+    @Override
+    public void onError(String message) {
+        Log.e(TAG, message);
     }
 
     @Override

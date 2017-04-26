@@ -20,8 +20,8 @@ public class DisplayActivity extends Activity implements View.OnClickListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_display);
 
-        ImageView imageView = (ImageView) findViewById(R.id.activity_display_image);
-        findViewById(R.id.activity_display_return).setOnClickListener(this);
+        ImageView imageView = (ImageView) findViewById(R.id.imageView);
+        findViewById(R.id.returnButton).setOnClickListener(this);
 
         String filename = getIntent().getExtras().getString("filename", "image.jpg");
         File file = new File(getFilesDir(), filename);

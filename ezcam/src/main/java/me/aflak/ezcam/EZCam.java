@@ -40,12 +40,12 @@ public class EZCam {
     private Context context;
     private EZCamCallback cameraCallback;
 
-    private CameraManager cameraManager;
-    private CameraDevice cameraDevice;
+    private SparseArray<String> camerasList;
     private String currentCamera;
     private Size previewSize;
-    private SparseArray<String> camerasList;
 
+    private CameraManager cameraManager;
+    private CameraDevice cameraDevice;
     private CameraCaptureSession cameraCaptureSession;
     private CameraCharacteristics cameraCharacteristics;
     private CaptureRequest.Builder captureRequestBuilder;
@@ -128,7 +128,7 @@ public class EZCam {
         }
     }
 
-    public void open() {
+    public void open(final int templateType, final TextureView textureView) {
         if(!checkCameraId()){
             return;
         }
@@ -143,9 +143,7 @@ public class EZCam {
                 @Override
                 public void onOpened(@NonNull CameraDevice camera) {
                     cameraDevice = camera;
-                    if(cameraCallback != null){
-                        cameraCallback.onCameraOpened();
-                    }
+                    setupPreview(templateType, textureView);
                 }
 
                 @Override
@@ -182,11 +180,36 @@ public class EZCam {
         }
     }
 
-    public void setupPreview(final int templateType, final TextureView outputSurface) {
-        if(!checkCameraDevice()){
-            return;
-        }
+    private void setupPreview_(int templateType, SurfaceTexture surfaceTexture){
+        Surface surface = new Surface(surfaceTexture);
 
+        try {
+            captureRequestBuilder = cameraDevice.createCaptureRequest(templateType);
+            captureRequestBuilder.addTarget(surface);
+
+            captureRequestBuilderImageReader = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            captureRequestBuilderImageReader.addTarget(imageReader.getSurface());
+
+            cameraDevice.createCaptureSession(Arrays.asList(surface, imageReader.getSurface()), new CameraCaptureSession.StateCallback() {
+                @Override
+                public void onConfigured(@NonNull CameraCaptureSession session) {
+                    cameraCaptureSession = session;
+                    if(cameraCallback != null){
+                        cameraCallback.onCameraReady();
+                    }
+                }
+
+                @Override
+                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+                    notifyError("Could not configure capture session.");
+                }
+            }, null);
+        } catch (CameraAccessException e) {
+            notifyError(e.getLocalizedMessage());
+        }
+    }
+
+    private void setupPreview(final int templateType, final TextureView outputSurface){
         if(outputSurface.isAvailable()){
             setupPreview_(templateType, outputSurface.getSurfaceTexture());
         }
@@ -203,6 +226,11 @@ public class EZCam {
                 public void onSurfaceTextureUpdated(SurfaceTexture surface) {}
             });
         }
+    }
+
+    public void setPreviewParameter(CaptureRequest.Key<Integer> key, Integer value){
+        captureRequestBuilder.set(key, value);
+        captureRequestBuilderImageReader.set(key, value);
     }
 
     private void setAspectRatioTextureView(Size previewSize, TextureView textureView)
@@ -253,37 +281,8 @@ public class EZCam {
         textureView.setLayoutParams(new FrameLayout.LayoutParams(newWidth, newHeight, Gravity.CENTER));
     }
 
-    private void setupPreview_(int templateType, SurfaceTexture surfaceTexture){
-        Surface surface = new Surface(surfaceTexture);
-
-        try {
-            captureRequestBuilder = cameraDevice.createCaptureRequest(templateType);
-            captureRequestBuilder.addTarget(surface);
-
-            captureRequestBuilderImageReader = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-            captureRequestBuilderImageReader.addTarget(imageReader.getSurface());
-
-            cameraDevice.createCaptureSession(Arrays.asList(surface, imageReader.getSurface()), new CameraCaptureSession.StateCallback() {
-                @Override
-                public void onConfigured(@NonNull CameraCaptureSession session) {
-                    cameraCaptureSession = session;
-                    if(cameraCallback != null){
-                        cameraCallback.onPreviewReady();
-                    }
-                }
-
-                @Override
-                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-                    notifyError("Could not configure capture session.");
-                }
-            }, null);
-        } catch (CameraAccessException e) {
-            notifyError(e.getLocalizedMessage());
-        }
-    }
-
     public void startPreview(){
-        if(!checkCaptureSession()){
+        if(!checkCameraDevice()){
             return;
         }
 
@@ -295,10 +294,6 @@ public class EZCam {
     }
 
     public void stopPreview(){
-        if(!checkCaptureRequest()){
-            return;
-        }
-
         try {
             cameraCaptureSession.stopRepeating();
         } catch (CameraAccessException e) {
@@ -343,22 +338,6 @@ public class EZCam {
     private boolean checkCameraDevice(){
         if(cameraDevice == null){
             notifyError("openCamera() has not been called.");
-            return false;
-        }
-        return true;
-    }
-
-    private boolean checkCaptureSession(){
-        if(cameraCaptureSession == null){
-            notifyError("preparePreview() has not been called.");
-            return false;
-        }
-        return true;
-    }
-
-    private boolean checkCaptureRequest(){
-        if(captureRequestBuilder == null){
-            notifyError("startPreview() has not been called.");
             return false;
         }
         return true;

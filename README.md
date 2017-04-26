@@ -27,6 +27,19 @@ Or if you use Maven :
 
 **https://github.com/omaflak/Android-Camera2-Library/blob/master/app/src/main/java/me/aflak/libraries/MainActivity.java**
 
+# TextureView
+
+**Important : The TextureView must be in a FrameLayout.**
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <TextureView
+            android:id="@+id/textureView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </FrameLayout>
+
 # EZCam
 
     EZCam cam = new EZCam(Context);

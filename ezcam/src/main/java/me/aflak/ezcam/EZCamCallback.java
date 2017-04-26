@@ -7,9 +7,8 @@ import android.media.ImageReader;
  */
 
 public interface EZCamCallback {
-    void onError(String message);
-    void onCameraOpened();
-    void onCameraDisconnected();
-    void onPreviewReady();
+    void onCameraReady();
     void onPicture(ImageReader imageReader);
+    void onError(String message);
+    void onCameraDisconnected();
 }
