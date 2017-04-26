@@ -30,7 +30,8 @@ Or if you use Maven :
 # EZCam
 
     EZCam cam = new EZCam(Context);
-    cam.selectCamera(cam.getCamerasList().get(EZCam.BACK)); // should first verify if the list contains EZCam.BACK...
+    cam.selectCamera(CameraCharacteristics.LENS_FACING_BACK);
+    // you can get the available cameras with	:	getCamerasList()
 
 # Callback
 

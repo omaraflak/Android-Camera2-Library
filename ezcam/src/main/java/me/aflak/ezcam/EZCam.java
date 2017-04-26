@@ -19,6 +19,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.DisplayMetrics;
 import android.util.Size;
+import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.Surface;
 import android.view.TextureView;
@@ -30,8 +31,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by Omar on 23/02/2017.
@@ -45,6 +44,7 @@ public class EZCam {
     private CameraDevice cameraDevice;
     private String currentCamera;
     private Size previewSize;
+    private SparseArray<String> camerasList;
 
     private CameraCaptureSession cameraCaptureSession;
     private CameraCharacteristics cameraCharacteristics;
@@ -54,10 +54,6 @@ public class EZCam {
 
     private final int SCREEN_HEIGHT;
     private final int SCREEN_WIDTH;
-
-    public static final String FRONT = "FRONT";
-    public static final String BACK = "BACK";
-    public static final String EXTERNAL = "EXTERNAL";
 
     public EZCam(Context context) {
         this.context = context;
@@ -73,8 +69,8 @@ public class EZCam {
         this.cameraCallback = cameraCallback;
     }
 
-    public Map<String, String> getCamerasList(){
-        Map<String, String> map = new HashMap<>();
+    public SparseArray<String> getCamerasList(){
+        camerasList = new SparseArray<>();
         try {
             String[] camerasAvailable = cameraManager.getCameraIdList();
             CameraCharacteristics cam;
@@ -85,29 +81,38 @@ public class EZCam {
                 if (characteristic!=null){
                     switch (characteristic){
                         case CameraCharacteristics.LENS_FACING_FRONT:
-                            map.put(FRONT, id);
+                            camerasList.put(CameraCharacteristics.LENS_FACING_FRONT, id);
                             break;
 
                         case CameraCharacteristics.LENS_FACING_BACK:
-                            map.put(BACK, id);
+                            camerasList.put(CameraCharacteristics.LENS_FACING_BACK, id);
                             break;
 
                         case CameraCharacteristics.LENS_FACING_EXTERNAL:
-                            map.put(EXTERNAL, id);
+                            camerasList.put(CameraCharacteristics.LENS_FACING_EXTERNAL, id);
                             break;
                     }
                 }
             }
-            return map;
+            return camerasList;
         } catch (CameraAccessException e) {
             notifyError(e.getLocalizedMessage());
             return null;
         }
     }
 
-    public void selectCamera(String id) {
+    public void selectCamera(int id) {
+        if(camerasList == null){
+            getCamerasList();
+        }
+
+        currentCamera = camerasList.get(id, null);
+        if(currentCamera == null) {
+            notifyError("Camera id not found.");
+            return;
+        }
+
         try {
-            currentCamera = id;
             cameraCharacteristics = cameraManager.getCameraCharacteristics(currentCamera);
             StreamConfigurationMap map = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             if(map != null) {

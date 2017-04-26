@@ -2,6 +2,7 @@ package me.aflak.libraries;
 
 import android.Manifest;
 import android.content.Intent;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.media.ImageReader;
 import android.support.v7.app.AppCompatActivity;
@@ -43,7 +44,7 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
 
         cam = new EZCam(this);
         cam.setCameraCallback(this);
-        cam.selectCamera(cam.getCamerasList().get(EZCam.BACK));
+        cam.selectCamera(CameraCharacteristics.LENS_FACING_BACK);
 
         Dexter.withActivity(MainActivity.this).withPermission(Manifest.permission.CAMERA).withListener(new PermissionListener() {
             @Override
