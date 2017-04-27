@@ -6,14 +6,14 @@ Library that allows you to display preview and take pictures easily with camera2
 
 Add the following line in your gradle dependencies :
 
-	compile 'me.aflak.libraries:ezcam:2.2'
+	compile 'me.aflak.libraries:ezcam:X.X'
 
 Or if you use Maven :
 
 	<dependency>
 	  <groupId>me.aflak.libraries</groupId>
 	  <artifactId>ezcam</artifactId>
-	  <version>2.2</version>
+	  <version>X.X</version>
 	  <type>pom</type>
 	</dependency>
 
