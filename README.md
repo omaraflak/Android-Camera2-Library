@@ -34,7 +34,7 @@ Or if you use Maven :
             android:layout_height="wrap_content"/>
     </FrameLayout>
 
-# EZCam
+# Initialize
 
     EZCam cam = new EZCam(Context);
     cam.selectCamera(CameraCharacteristics.LENS_FACING_BACK);
