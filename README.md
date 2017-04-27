@@ -1,4 +1,4 @@
-# Android Camera2 Library [![Maven Central](https://maven-badges.herokuapp.com/maven-central/me.aflak.libraries/ezcam/badge.svg)](https://maven-badges.herokuapp.com/maven-central/me.aflak.libraries/ezcam)
+## Camera 2 Library [![Maven Central](https://maven-badges.herokuapp.com/maven-central/me.aflak.libraries/ezcam/badge.svg)](https://maven-badges.herokuapp.com/maven-central/me.aflak.libraries/ezcam)
 
 Library that allows you to display preview and take pictures easily with camera2 !
 
