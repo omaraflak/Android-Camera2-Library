@@ -53,8 +53,8 @@ Or if you use Maven :
         }
 
         @Override
-        public void onPicture(ImageReader imageReader) {
-        	cam.saveImage(imageReader, "image.jpg"); // will save image to internal storage
+        public void onPicture(Image image) {
+        	cam.saveImage(image, "image.jpg"); // will save image to internal storage
         }
 
         @Override
@@ -82,6 +82,5 @@ Or if you use Maven :
 
 # TODO
 
-- Support for landscape mode
-- Apply custom filters
 - Recording videos
+- Apply custom filters
