@@ -11,7 +11,7 @@
         android:background="@drawable/border"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true">
-        <TextureView
+        <me.aflak.ezcam.AutoFitTextureView
             android:id="@+id/textureView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />

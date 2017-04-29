@@ -10,7 +10,6 @@ import android.media.ImageReader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.TextureView;
 import android.view.View;
 
 import com.karumi.dexter.Dexter;
@@ -25,11 +24,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import me.aflak.ezcam.AutoFitTextureView;
 import me.aflak.ezcam.EZCam;
 import me.aflak.ezcam.EZCamCallback;
 
 public class MainActivity extends AppCompatActivity implements EZCamCallback, View.OnClickListener{
-    private TextureView textureView;
+    private AutoFitTextureView textureView;
 
     private EZCam cam;
     private SimpleDateFormat dateFormat;
@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        textureView = (TextureView) findViewById(R.id.textureView);
+        textureView = (AutoFitTextureView) findViewById(R.id.textureView);
         dateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss", Locale.getDefault());
 
         cam = new EZCam(this);
@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
     @Override
     public void onCameraReady() {
         cam.setCaptureSetting(CaptureRequest.COLOR_CORRECTION_ABERRATION_MODE, CameraMetadata.COLOR_CORRECTION_ABERRATION_MODE_HIGH_QUALITY);
-        cam.setCaptureSetting(CaptureRequest.CONTROL_EFFECT_MODE, CameraMetadata.CONTROL_EFFECT_MODE_POSTERIZE);
+        //cam.setCaptureSetting(CaptureRequest.CONTROL_EFFECT_MODE, CameraMetadata.CONTROL_EFFECT_MODE_POSTERIZE);
         cam.startPreview();
 
         textureView.setOnClickListener(this);

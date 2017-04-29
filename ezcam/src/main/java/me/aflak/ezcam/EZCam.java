@@ -5,6 +5,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
+import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -18,7 +20,6 @@ import android.media.ImageReader;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
 import android.view.Gravity;
@@ -43,7 +44,7 @@ public class EZCam {
 
     private SparseArray<String> camerasList;
     private String currentCamera;
-    private Size previewSize;
+    private Size largestPreviewSize;
 
     private CameraManager cameraManager;
     private CameraDevice cameraDevice;
@@ -117,8 +118,8 @@ public class EZCam {
             cameraCharacteristics = cameraManager.getCameraCharacteristics(currentCamera);
             StreamConfigurationMap map = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             if(map != null) {
-                previewSize = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new CompareSizesByArea());
-                imageReader = ImageReader.newInstance(previewSize.getWidth(), previewSize.getHeight(), ImageFormat.JPEG, 1);
+                largestPreviewSize = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new CompareSizesByArea());
+                imageReader = ImageReader.newInstance(largestPreviewSize.getWidth(), largestPreviewSize.getHeight(), ImageFormat.JPEG, 1);
                 imageReader.setOnImageAvailableListener(onImageAvailable, null);
             }
             else{
@@ -129,7 +130,7 @@ public class EZCam {
         }
     }
 
-    public void open(final int templateType, final TextureView textureView) {
+    public void open(final int templateType, final AutoFitTextureView textureView) {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             notifyError("You don't have the required permissions.");
             return;
@@ -206,7 +207,7 @@ public class EZCam {
         }
     }
 
-    private void setupPreview(final int templateType, final TextureView outputSurface){
+    private void setupPreview(final int templateType, final AutoFitTextureView outputSurface){
         if(outputSurface.isAvailable()){
             setupPreview_(templateType, outputSurface.getSurfaceTexture());
         }
@@ -214,7 +215,7 @@ public class EZCam {
             outputSurface.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
                 @Override
                 public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                    setAspectRatioTextureView(previewSize, outputSurface);
+                    setAspectRatioTextureView(largestPreviewSize, outputSurface);
                     setupPreview_(templateType, surface);
                 }
 
@@ -230,52 +231,48 @@ public class EZCam {
         captureRequestBuilderImageReader.set(key, value);
     }
 
-    private void setAspectRatioTextureView(Size previewSize, TextureView textureView)
+    private void setAspectRatioTextureView(Size largestPreviewSize, AutoFitTextureView textureView)
     {
         int rotation = ((Activity)context).getWindowManager().getDefaultDisplay().getRotation();
-        int newWidth=previewSize.getWidth(), newHeight=previewSize.getHeight();
-
-        textureView.setPivotX(textureView.getWidth() / 2);
-        textureView.setPivotY(textureView.getHeight() / 2);
+        int newWidth=largestPreviewSize.getWidth(), newHeight=largestPreviewSize.getHeight();
 
         switch (rotation) {
-            case Surface.ROTATION_0: // portrait
+            case Surface.ROTATION_0:
                 newWidth = SCREEN_WIDTH;
-                newHeight = (SCREEN_WIDTH * previewSize.getWidth() / previewSize.getHeight());
+                newHeight = (SCREEN_WIDTH * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
                 break;
 
-            case Surface.ROTATION_180: // weird...
+            case Surface.ROTATION_180:
                 newWidth = SCREEN_WIDTH;
-                newHeight = (SCREEN_WIDTH * previewSize.getWidth() / previewSize.getHeight());
-                textureView.setRotation(180);
+                newHeight = (SCREEN_WIDTH * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
                 break;
 
-            case Surface.ROTATION_90: // rotate to left
-                if(previewSize.getHeight()-SCREEN_HEIGHT > previewSize.getWidth()-SCREEN_WIDTH) {
-                    newWidth = (SCREEN_HEIGHT * previewSize.getWidth() / previewSize.getHeight());
-                    newHeight = SCREEN_HEIGHT;
-                }
-                else{
-                    newWidth = SCREEN_WIDTH;
-                    newHeight = (SCREEN_WIDTH * previewSize.getHeight() / previewSize.getWidth());
-                }
-                textureView.setRotation(270);
+            case Surface.ROTATION_90:
+                newWidth = SCREEN_HEIGHT;
+                newHeight = (SCREEN_HEIGHT * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
                 break;
 
-            case Surface.ROTATION_270: // rotate to right
-                if(previewSize.getHeight()-SCREEN_HEIGHT > previewSize.getWidth()-SCREEN_WIDTH) {
-                    newWidth = (SCREEN_HEIGHT * previewSize.getWidth() / previewSize.getHeight());
-                    newHeight = SCREEN_HEIGHT;
-                }
-                else{
-                    newWidth = SCREEN_WIDTH;
-                    newHeight = (SCREEN_WIDTH * previewSize.getHeight() / previewSize.getWidth());
-                }
-                textureView.setRotation(90);
+            case Surface.ROTATION_270:
+                newWidth = SCREEN_HEIGHT;
+                newHeight = (SCREEN_HEIGHT * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
                 break;
         }
 
         textureView.setLayoutParams(new FrameLayout.LayoutParams(newWidth, newHeight, Gravity.CENTER));
+        rotatePreview(textureView, rotation, newWidth, newHeight);
+    }
+
+    private void rotatePreview(TextureView mTextureView, int rotation, int viewWidth, int viewHeight) {
+        Matrix matrix = new Matrix();
+        RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
+        float centerX = viewRect.centerX();
+        float centerY = viewRect.centerY();
+        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
+            matrix.postRotate(90 * (rotation - 2), centerX, centerY);
+        } else if (Surface.ROTATION_180 == rotation) {
+            matrix.postRotate(180, centerX, centerY);
+        }
+        mTextureView.setTransform(matrix);
     }
 
     public void startPreview(){
