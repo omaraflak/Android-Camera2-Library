@@ -17,6 +17,8 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.DisplayMetrics;
@@ -53,6 +55,9 @@ public class EZCam {
     private CaptureRequest.Builder captureRequestBuilder;
     private CaptureRequest.Builder captureRequestBuilderImageReader;
     private ImageReader imageReader;
+
+    private HandlerThread backgroundThread;
+    private Handler backgroundHandler;
 
     private final int SCREEN_HEIGHT;
     private final int SCREEN_WIDTH;
@@ -120,7 +125,7 @@ public class EZCam {
             if(map != null) {
                 largestPreviewSize = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new CompareSizesByArea());
                 imageReader = ImageReader.newInstance(largestPreviewSize.getWidth(), largestPreviewSize.getHeight(), ImageFormat.JPEG, 1);
-                imageReader.setOnImageAvailableListener(onImageAvailable, null);
+                imageReader.setOnImageAvailableListener(onImageAvailable, backgroundHandler);
             }
             else{
                 notifyError("Could not get configuration map.");
@@ -130,11 +135,13 @@ public class EZCam {
         }
     }
 
-    public void open(final int templateType, final AutoFitTextureView textureView) {
+    public void open(final int templateType, final TextureView textureView) {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             notifyError("You don't have the required permissions.");
             return;
         }
+
+        startBackgroundThread();
 
         try {
             cameraManager.openCamera(currentCamera, new CameraDevice.StateCallback() {
@@ -172,7 +179,7 @@ public class EZCam {
                             break;
                     }
                 }
-            }, null);
+            }, backgroundHandler);
         } catch (CameraAccessException e) {
             notifyError("Could not open camera. May be used by another application.");
         }
@@ -201,13 +208,13 @@ public class EZCam {
                 public void onConfigureFailed(@NonNull CameraCaptureSession session) {
                     notifyError("Could not configure capture session.");
                 }
-            }, null);
+            }, backgroundHandler);
         } catch (CameraAccessException e) {
             notifyError(e.getLocalizedMessage());
         }
     }
 
-    private void setupPreview(final int templateType, final AutoFitTextureView outputSurface){
+    private void setupPreview(final int templateType, final TextureView outputSurface){
         if(outputSurface.isAvailable()){
             setupPreview_(templateType, outputSurface.getSurfaceTexture());
         }
@@ -231,7 +238,7 @@ public class EZCam {
         captureRequestBuilderImageReader.set(key, value);
     }
 
-    private void setAspectRatioTextureView(Size largestPreviewSize, AutoFitTextureView textureView)
+    private void setAspectRatioTextureView(Size largestPreviewSize, TextureView textureView)
     {
         int rotation = ((Activity)context).getWindowManager().getDefaultDisplay().getRotation();
         int newWidth=largestPreviewSize.getWidth(), newHeight=largestPreviewSize.getHeight();
@@ -277,7 +284,7 @@ public class EZCam {
 
     public void startPreview(){
         try {
-            cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
+            cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler);
         } catch (CameraAccessException e) {
             notifyError(e.getLocalizedMessage());
         }
@@ -293,12 +300,13 @@ public class EZCam {
 
     public void close(){
         cameraDevice.close();
+        stopBackgroundThread();
     }
 
     public void takePicture(){
         captureRequestBuilderImageReader.set(CaptureRequest.JPEG_ORIENTATION, cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION));
         try {
-            cameraCaptureSession.capture(captureRequestBuilderImageReader.build(), null, null);
+            cameraCaptureSession.capture(captureRequestBuilderImageReader.build(), null, backgroundHandler);
         } catch (CameraAccessException e) {
             notifyError(e.getLocalizedMessage());
         }
@@ -308,7 +316,7 @@ public class EZCam {
         @Override
         public void onImageAvailable(ImageReader reader) {
             if(cameraCallback != null){
-                cameraCallback.onPicture(imageReader);
+                cameraCallback.onPicture(imageReader.acquireLatestImage());
             }
         }
     };
@@ -319,8 +327,7 @@ public class EZCam {
         }
     }
 
-    public File saveImage(ImageReader imageReader, String filename) throws IOException {
-        Image image = imageReader.acquireLatestImage();
+    public File saveImage(Image image, String filename) throws IOException {
         File file = new File(context.getFilesDir(), filename);
         if(file.exists()) {
             image.close();
@@ -334,5 +341,22 @@ public class EZCam {
         image.close();
         output.close();
         return file;
+    }
+
+    private void startBackgroundThread() {
+        backgroundThread = new HandlerThread("EZCam");
+        backgroundThread.start();
+        backgroundHandler = new Handler(backgroundThread.getLooper());
+    }
+
+    private void stopBackgroundThread() {
+        backgroundThread.quitSafely();
+        try {
+            backgroundThread.join();
+            backgroundThread = null;
+            backgroundHandler = null;
+        } catch (InterruptedException e) {
+            notifyError(e.getLocalizedMessage());
+        }
     }
 }

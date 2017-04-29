@@ -6,10 +6,12 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
+import android.media.Image;
 import android.media.ImageReader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.TextureView;
 import android.view.View;
 
 import com.karumi.dexter.Dexter;
@@ -24,12 +26,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import me.aflak.ezcam.AutoFitTextureView;
 import me.aflak.ezcam.EZCam;
 import me.aflak.ezcam.EZCamCallback;
 
 public class MainActivity extends AppCompatActivity implements EZCamCallback, View.OnClickListener{
-    private AutoFitTextureView textureView;
+    private TextureView textureView;
 
     private EZCam cam;
     private SimpleDateFormat dateFormat;
@@ -41,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        textureView = (AutoFitTextureView) findViewById(R.id.textureView);
+        textureView = (TextureView) findViewById(R.id.textureView);
         dateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss", Locale.getDefault());
 
         cam = new EZCam(this);
@@ -81,11 +82,11 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
     }
 
     @Override
-    public void onPicture(ImageReader imageReader) {
+    public void onPicture(Image image) {
         cam.stopPreview();
         try {
             String filename = "image_"+dateFormat.format(new Date())+".jpg"; // image_current_date.jpg
-            cam.saveImage(imageReader, filename); // save image to internal storage i.e. new File(getFilesDir(), "image.jpg")
+            cam.saveImage(image, filename); // save image to internal storage i.e. new File(getFilesDir(), "image.jpg")
 
             Intent intent = new Intent(this, DisplayActivity.class);
             intent.putExtra("filename", filename);
