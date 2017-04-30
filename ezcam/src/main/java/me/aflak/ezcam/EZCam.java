@@ -22,6 +22,7 @@ import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
 import android.view.Gravity;
@@ -59,17 +60,9 @@ public class EZCam {
     private HandlerThread backgroundThread;
     private Handler backgroundHandler;
 
-    private final int SCREEN_HEIGHT;
-    private final int SCREEN_WIDTH;
-
     public EZCam(Context context) {
         this.context = context;
         this.cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
-
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        ((Activity)context).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        SCREEN_HEIGHT = displayMetrics.heightPixels;
-        SCREEN_WIDTH = displayMetrics.widthPixels;
     }
 
     public void setCameraCallback(EZCamCallback cameraCallback) {
@@ -222,7 +215,8 @@ public class EZCam {
             outputSurface.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
                 @Override
                 public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                    setAspectRatioTextureView(largestPreviewSize, outputSurface);
+                    Log.e("SURFACE", width+":"+height);
+                    setAspectRatioTextureView(outputSurface, width, height);
                     setupPreview_(templateType, surface);
                 }
 
@@ -233,35 +227,44 @@ public class EZCam {
         }
     }
 
-    public void setCaptureSetting(CaptureRequest.Key<Integer> key, Integer value){
-        captureRequestBuilder.set(key, value);
-        captureRequestBuilderImageReader.set(key, value);
+    public<T> void setCaptureSetting(CaptureRequest.Key<T> key, T value){
+        if(captureRequestBuilder!=null && captureRequestBuilderImageReader!=null) {
+            captureRequestBuilder.set(key, value);
+            captureRequestBuilderImageReader.set(key, value);
+        }
     }
 
-    private void setAspectRatioTextureView(Size largestPreviewSize, TextureView textureView)
+    public<T> T getCharacteristic(CameraCharacteristics.Key<T> key){
+        if(cameraCharacteristics!=null) {
+            return cameraCharacteristics.get(key);
+        }
+        return null;
+    }
+
+    private void setAspectRatioTextureView(TextureView textureView, int surfaceWidth, int surfaceHeight)
     {
         int rotation = ((Activity)context).getWindowManager().getDefaultDisplay().getRotation();
-        int newWidth=largestPreviewSize.getWidth(), newHeight=largestPreviewSize.getHeight();
+        int newWidth = surfaceWidth, newHeight = surfaceHeight;
 
         switch (rotation) {
             case Surface.ROTATION_0:
-                newWidth = SCREEN_WIDTH;
-                newHeight = (SCREEN_WIDTH * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
+                newWidth = surfaceWidth;
+                newHeight = (surfaceWidth * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
                 break;
 
             case Surface.ROTATION_180:
-                newWidth = SCREEN_WIDTH;
-                newHeight = (SCREEN_WIDTH * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
+                newWidth = surfaceWidth;
+                newHeight = (surfaceWidth * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
                 break;
 
             case Surface.ROTATION_90:
-                newWidth = SCREEN_HEIGHT;
-                newHeight = (SCREEN_HEIGHT * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
+                newWidth = surfaceHeight;
+                newHeight = (surfaceHeight * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
                 break;
 
             case Surface.ROTATION_270:
-                newWidth = SCREEN_HEIGHT;
-                newHeight = (SCREEN_HEIGHT * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
+                newWidth = surfaceHeight;
+                newHeight = (surfaceHeight * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
                 break;
         }
 
@@ -276,7 +279,8 @@ public class EZCam {
         float centerY = viewRect.centerY();
         if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
             matrix.postRotate(90 * (rotation - 2), centerX, centerY);
-        } else if (Surface.ROTATION_180 == rotation) {
+        }
+        else if (Surface.ROTATION_180 == rotation) {
             matrix.postRotate(180, centerX, centerY);
         }
         mTextureView.setTransform(matrix);
