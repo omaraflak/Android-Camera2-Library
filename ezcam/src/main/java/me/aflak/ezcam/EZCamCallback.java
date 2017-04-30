@@ -3,7 +3,10 @@ package me.aflak.ezcam;
 import android.media.Image;
 
 /**
- * Created by Omar on 23/02/2017.
+ * Camera callback
+ *
+ * @author Omar
+ * @since 23/02/2017
  */
 
 public interface EZCamCallback {

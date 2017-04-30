@@ -21,7 +21,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
@@ -38,7 +37,10 @@ import java.util.Arrays;
 import java.util.Collections;
 
 /**
- * Created by Omar on 23/02/2017.
+ * Class that simplifies the use of Camera 2 api
+ *
+ * @author Omar Aflak
+ * @since 23/02/2017
  */
 
 public class EZCam {
@@ -65,10 +67,18 @@ public class EZCam {
         this.cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
     }
 
+    /**
+     * Set callback to receive camera states
+     * @param cameraCallback callback
+     */
     public void setCameraCallback(EZCamCallback cameraCallback) {
         this.cameraCallback = cameraCallback;
     }
 
+    /**
+     * Get available cameras
+     * @return SparseArray of available cameras ids
+     */
     public SparseArray<String> getCamerasList(){
         camerasList = new SparseArray<>();
         try {
@@ -96,17 +106,21 @@ public class EZCam {
             }
             return camerasList;
         } catch (CameraAccessException e) {
-            notifyError(e.getLocalizedMessage());
+            notifyError(e.getMessage());
             return null;
         }
     }
 
-    public void selectCamera(int id) {
+    /**
+     * Select the camera you want to open : front, back, external(s)
+     * @param id Id of the camera which can be retrieved with getCamerasList().get(CameraCharacteristics.LENS_FACING_BACK)
+     */
+    public void selectCamera(String id) {
         if(camerasList == null){
             getCamerasList();
         }
 
-        currentCamera = camerasList.get(id, null);
+        currentCamera = camerasList.indexOfValue(id)<0?null:id;
         if(currentCamera == null) {
             notifyError("Camera id not found.");
             return;
@@ -124,10 +138,15 @@ public class EZCam {
                 notifyError("Could not get configuration map.");
             }
         } catch (CameraAccessException e) {
-            notifyError(e.getLocalizedMessage());
+            notifyError(e.getMessage());
         }
     }
 
+    /**
+     * Open camera to prepare preview
+     * @param templateType capture mode e.g. CameraDevice.TEMPLATE_PREVIEW
+     * @param textureView TextureView where preview should be displayed
+     */
     public void open(final int templateType, final TextureView textureView) {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             notifyError("You don't have the required permissions.");
@@ -174,7 +193,7 @@ public class EZCam {
                 }
             }, backgroundHandler);
         } catch (CameraAccessException e) {
-            notifyError("Could not open camera. May be used by another application.");
+            notifyError(e.getMessage());
         }
     }
 
@@ -203,7 +222,7 @@ public class EZCam {
                 }
             }, backgroundHandler);
         } catch (CameraAccessException e) {
-            notifyError(e.getLocalizedMessage());
+            notifyError(e.getMessage());
         }
     }
 
@@ -227,6 +246,11 @@ public class EZCam {
         }
     }
 
+    /**
+     * Set CaptureRequest parameters for preview e.g. flash, auto-focus, macro mode, etc.
+     * @param key e.g. CaptureRequest.CONTROL_EFFECT_MODE
+     * @param value e.g. CameraMetadata.CONTROL_EFFECT_MODE_NEGATIVE
+     */
     public<T> void setCaptureSetting(CaptureRequest.Key<T> key, T value){
         if(captureRequestBuilder!=null && captureRequestBuilderImageReader!=null) {
             captureRequestBuilder.set(key, value);
@@ -234,6 +258,10 @@ public class EZCam {
         }
     }
 
+    /**
+     * Get characteristic of selected camera e.g. available effects, scene modes, etc.
+     * @param key e.g. CameraCharacteristics.CONTROL_AVAILABLE_EFFECTS
+     */
     public<T> T getCharacteristic(CameraCharacteristics.Key<T> key){
         if(cameraCharacteristics!=null) {
             return cameraCharacteristics.get(key);
@@ -286,33 +314,53 @@ public class EZCam {
         mTextureView.setTransform(matrix);
     }
 
+    /**
+     * start the preview, capture request is built at each call here
+     */
     public void startPreview(){
         try {
             cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler);
         } catch (CameraAccessException e) {
-            notifyError(e.getLocalizedMessage());
+            notifyError(e.getMessage());
         }
     }
 
+    /**
+     * stop the preview
+     */
     public void stopPreview(){
         try {
             cameraCaptureSession.stopRepeating();
         } catch (CameraAccessException e) {
-            notifyError(e.getLocalizedMessage());
+            notifyError(e.getMessage());
         }
     }
 
+    /**
+     * shortcut to call stopPreview() then startPreview()
+     */
+    public void restartPreview(){
+        stopPreview();
+        startPreview();
+    }
+
+    /**
+     * close the camera definitively
+     */
     public void close(){
         cameraDevice.close();
         stopBackgroundThread();
     }
 
+    /**
+     * take a picture
+     */
     public void takePicture(){
         captureRequestBuilderImageReader.set(CaptureRequest.JPEG_ORIENTATION, cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION));
         try {
             cameraCaptureSession.capture(captureRequestBuilderImageReader.build(), null, backgroundHandler);
         } catch (CameraAccessException e) {
-            notifyError(e.getLocalizedMessage());
+            notifyError(e.getMessage());
         }
     }
 
@@ -331,8 +379,13 @@ public class EZCam {
         }
     }
 
-    public File saveImage(Image image, String filename) throws IOException {
-        File file = new File(context.getFilesDir(), filename);
+    /**
+     * Save image to storage
+     * @param image Image object got from onPicture() callback of EZCamCallback
+     * @param file File where image is going to be written
+     * @return File object pointing to the file uri, null if file already exist
+     */
+    public File saveImage(Image image, File file) throws IOException {
         if(file.exists()) {
             image.close();
             return null;
@@ -360,7 +413,7 @@ public class EZCam {
             backgroundThread = null;
             backgroundHandler = null;
         } catch (InterruptedException e) {
-            notifyError(e.getLocalizedMessage());
+            notifyError(e.getMessage());
         }
     }
 }

@@ -6,11 +6,13 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.params.MeteringRectangle;
 import android.media.Image;
-import android.media.ImageReader;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
 
@@ -21,6 +23,7 @@ import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.single.PermissionListener;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -29,7 +32,7 @@ import java.util.Locale;
 import me.aflak.ezcam.EZCam;
 import me.aflak.ezcam.EZCamCallback;
 
-public class MainActivity extends AppCompatActivity implements EZCamCallback, View.OnClickListener{
+public class MainActivity extends AppCompatActivity implements EZCamCallback, View.OnLongClickListener{
     private TextureView textureView;
 
     private EZCam cam;
@@ -47,7 +50,9 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
 
         cam = new EZCam(this);
         cam.setCameraCallback(this);
-        cam.selectCamera(CameraCharacteristics.LENS_FACING_BACK);
+
+        String id = cam.getCamerasList().get(CameraCharacteristics.LENS_FACING_BACK);
+        cam.selectCamera(id);
 
         Dexter.withActivity(MainActivity.this).withPermission(Manifest.permission.CAMERA).withListener(new PermissionListener() {
             @Override
@@ -68,26 +73,25 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
     }
 
     @Override
-    public void onClick(View v) {
+    public boolean onLongClick(View v) {
         cam.takePicture();
+        return false;
     }
 
     @Override
     public void onCameraReady() {
         cam.setCaptureSetting(CaptureRequest.COLOR_CORRECTION_ABERRATION_MODE, CameraMetadata.COLOR_CORRECTION_ABERRATION_MODE_HIGH_QUALITY);
-        cam.setCaptureSetting(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
-        cam.setCaptureSetting(CaptureRequest.CONTROL_EFFECT_MODE, CameraMetadata.CONTROL_EFFECT_MODE_NEGATIVE);
         cam.startPreview();
 
-        textureView.setOnClickListener(this);
+        textureView.setOnLongClickListener(this);
     }
 
     @Override
     public void onPicture(Image image) {
         cam.stopPreview();
         try {
-            String filename = "image_"+dateFormat.format(new Date())+".jpg"; // image_current_date.jpg
-            cam.saveImage(image, filename); // save image to internal storage i.e. new File(getFilesDir(), "image.jpg")
+            String filename = "image_"+dateFormat.format(new Date())+".jpg";
+            cam.saveImage(image, new File(getFilesDir(), filename));
 
             Intent intent = new Intent(this, DisplayActivity.class);
             intent.putExtra("filename", filename);
