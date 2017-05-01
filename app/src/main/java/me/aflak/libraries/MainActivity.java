@@ -6,13 +6,10 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.params.MeteringRectangle;
 import android.media.Image;
-import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
 
@@ -91,10 +88,11 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
         cam.stopPreview();
         try {
             String filename = "image_"+dateFormat.format(new Date())+".jpg";
-            cam.saveImage(image, new File(getFilesDir(), filename));
+            File file = new File(getFilesDir(), filename);
+            EZCam.saveImage(image, file);
 
             Intent intent = new Intent(this, DisplayActivity.class);
-            intent.putExtra("filename", filename);
+            intent.putExtra("filepath", file.getAbsolutePath());
             startActivity(intent);
             finish();
         } catch (IOException e) {
@@ -114,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements EZCamCallback, Vi
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         cam.close();
+        super.onDestroy();
     }
 }

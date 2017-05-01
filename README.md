@@ -37,8 +37,8 @@ Or if you use Maven :
 # Initialize
 
     EZCam cam = new EZCam(Context);
-    cam.selectCamera(CameraCharacteristics.LENS_FACING_BACK);
-    // you can get the available cameras with	:	getCamerasList()
+    String id = cam.getCamerasList().get(CameraCharacteristics.LENS_FACING_BACK); // should check if LENS_FACING_BACK exist before calling get()
+    cam.selectCamera(id);
 
 # Callback
 
@@ -47,14 +47,18 @@ Or if you use Maven :
         public void onCameraReady() {
         	// triggered after cam.open(...)
         	// you can set capture settings for example:
+        	cam.setCaptureSetting(CaptureRequest.COLOR_CORRECTION_ABERRATION_MODE, CameraMetadata.COLOR_CORRECTION_ABERRATION_MODE_HIGH_QUALITY);
         	cam.setCaptureSetting(CaptureRequest.CONTROL_EFFECT_MODE, CameraMetadata.CONTROL_EFFECT_MODE_NEGATIVE);
+        	
         	// then start the preview
         	cam.startPreview();
         }
 
         @Override
         public void onPicture(Image image) {
-        	cam.saveImage(image, "image.jpg"); // will save image to internal storage
+        	File file = new File(getFilesDir(), "image.jpg"); // internal storage
+        	File file = new File(getExternalFilesDir(null), "image.jpg") // external storage, need permissions
+        	cam.saveImage(image, file);
         }
 
         @Override
@@ -72,13 +76,17 @@ Or if you use Maven :
 
 	cam.open(CameraDevice.TEMPLATE_PREVIEW, textureView); // needs android.permission.CAMERA
 	
-# Take picture | stop preview | close camera 
+# Take picture
 
 	cam.takePicture();
 	
-	cam.stopPreview();
+# Close camera
 
-	cam.close();
+    @Override
+    protected void onDestroy() {
+        cam.close();
+        super.onDestroy();
+    }
 
 # TODO
 

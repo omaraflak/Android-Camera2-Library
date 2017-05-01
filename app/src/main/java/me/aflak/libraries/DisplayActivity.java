@@ -23,8 +23,8 @@ public class DisplayActivity extends Activity implements View.OnClickListener {
         ImageView imageView = (ImageView) findViewById(R.id.imageView);
         findViewById(R.id.returnButton).setOnClickListener(this);
 
-        String filename = getIntent().getExtras().getString("filename", "image.jpg");
-        File file = new File(getFilesDir(), filename);
+        String filepath = getIntent().getExtras().getString("filepath", null);
+        File file = new File(filepath);
         Glide.with(this).load(file).into(imageView);
     }
 

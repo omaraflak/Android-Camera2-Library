@@ -21,7 +21,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
 import android.view.Gravity;
@@ -234,7 +233,6 @@ public class EZCam {
             outputSurface.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
                 @Override
                 public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                    Log.e("SURFACE", width+":"+height);
                     setAspectRatioTextureView(outputSurface, width, height);
                     setupPreview_(templateType, surface);
                 }
@@ -385,7 +383,7 @@ public class EZCam {
      * @param file File where image is going to be written
      * @return File object pointing to the file uri, null if file already exist
      */
-    public File saveImage(Image image, File file) throws IOException {
+    public static File saveImage(Image image, File file) throws IOException {
         if(file.exists()) {
             image.close();
             return null;
