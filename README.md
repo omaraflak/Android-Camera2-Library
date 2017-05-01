@@ -43,7 +43,7 @@ Or if you use Maven :
 # Callback
 
     cam.setCameraCallback(new EZCamCallback() {
-    	@Override
+	@Override
         public void onCameraReady() {
         	// triggered after cam.open(...)
         	// you can set capture settings for example:
