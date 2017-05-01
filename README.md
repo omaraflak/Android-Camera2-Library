@@ -44,7 +44,7 @@ Or if you use Maven :
 
 	cam.setCameraCallback(new EZCamCallback() {
 		@Override
-			public void onCameraReady() {
+		public void onCameraReady() {
 			// triggered after cam.open(...)
 			// you can set capture settings for example:
 			cam.setCaptureSetting(CaptureRequest.COLOR_CORRECTION_ABERRATION_MODE, CameraMetadata.COLOR_CORRECTION_ABERRATION_MODE_HIGH_QUALITY);
@@ -55,19 +55,19 @@ Or if you use Maven :
 		}
 
 		@Override
-			public void onPicture(Image image) {
+		public void onPicture(Image image) {
 			File file = new File(getFilesDir(), "image.jpg"); // internal storage
 			File file = new File(getExternalFilesDir(null), "image.jpg") // external storage, need permissions
 			cam.saveImage(image, file);
 		}
 
 		@Override
-			public void onError(String message) {
+		public void onError(String message) {
 			// all errors will be passed through this methods
 		}
 
 		@Override
-			public void onCameraDisconnected() {
+		public void onCameraDisconnected() {
 			// camera disconnected
 		}
 	});
