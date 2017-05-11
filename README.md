@@ -89,4 +89,4 @@ Or if you use Maven :
 - Recording videos
 - Apply custom filters
 
-**[MainActivity.java](https://github.com/omaflak/Android-Camera2-Library/blob/master/app/src/main/java/me/aflak/libraries/MainActivity.java)**
+See [MainActivity.java](https://github.com/omaflak/Android-Camera2-Library/blob/master/app/src/main/java/me/aflak/libraries/MainActivity.java)
