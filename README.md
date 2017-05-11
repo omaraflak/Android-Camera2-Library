@@ -54,7 +54,7 @@ Or if you use Maven :
 		public void onPicture(Image image) {
 			File file = new File(getFilesDir(), "image.jpg"); // internal storage
 			File file = new File(getExternalFilesDir(null), "image.jpg") // external storage, need permissions
-			cam.saveImage(image, file);
+			EZCam.saveImage(image, file);
 		}
 
 		@Override
