@@ -70,7 +70,7 @@ Or if you use Maven :
 	
 # Open Camera
 
-	cam.open(CameraDevice.TEMPLATE_PREVIEW, textureView); // needs android.permission.CAMERA
+	cam.open(CameraDevice.TEMPLATE_PREVIEW, textureView); // needs Manifest.permission.CAMERA
 	
 # Take picture
 
