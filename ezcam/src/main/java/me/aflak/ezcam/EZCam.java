@@ -21,7 +21,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
 import android.view.Gravity;
@@ -234,7 +233,6 @@ public class EZCam {
             outputSurface.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
                 @Override
                 public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                    Log.e("SURFACE", width+":"+height);
                     setAspectRatioTextureView(outputSurface, width, height);
                     setupPreview_(templateType, outputSurface);
                 }
@@ -298,8 +296,6 @@ public class EZCam {
 
         textureView.setLayoutParams(new FrameLayout.LayoutParams(newWidth, newHeight, Gravity.CENTER));
         rotatePreview(textureView, rotation, newWidth, newHeight);
-
-        Log.e("NEW DIM", newWidth+":"+newHeight);
     }
 
     private void rotatePreview(TextureView mTextureView, int rotation, int viewWidth, int viewHeight) {
