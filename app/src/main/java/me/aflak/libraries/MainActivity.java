@@ -1,13 +1,14 @@
 package me.aflak.libraries;
 
 import android.Manifest;
+import android.app.ActionBar;
+import android.app.Activity;
 import android.content.Intent;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.media.Image;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.TextureView;
@@ -29,7 +30,7 @@ import java.util.Locale;
 import me.aflak.ezcam.EZCam;
 import me.aflak.ezcam.EZCamCallback;
 
-public class MainActivity extends AppCompatActivity implements EZCamCallback, View.OnLongClickListener{
+public class MainActivity extends Activity implements EZCamCallback, View.OnLongClickListener{
     private TextureView textureView;
 
     private EZCam cam;

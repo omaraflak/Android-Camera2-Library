@@ -21,6 +21,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
 import android.view.Gravity;
@@ -48,7 +49,7 @@ public class EZCam {
 
     private SparseArray<String> camerasList;
     private String currentCamera;
-    private Size largestPreviewSize;
+    private Size previewSize;
 
     private CameraManager cameraManager;
     private CameraDevice cameraDevice;
@@ -129,8 +130,8 @@ public class EZCam {
             cameraCharacteristics = cameraManager.getCameraCharacteristics(currentCamera);
             StreamConfigurationMap map = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             if(map != null) {
-                largestPreviewSize = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new CompareSizesByArea());
-                imageReader = ImageReader.newInstance(largestPreviewSize.getWidth(), largestPreviewSize.getHeight(), ImageFormat.JPEG, 1);
+                previewSize = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new CompareSizesByArea());
+                imageReader = ImageReader.newInstance(previewSize.getWidth(), previewSize.getHeight(), ImageFormat.JPEG, 1);
                 imageReader.setOnImageAvailableListener(onImageAvailable, backgroundHandler);
             }
             else{
@@ -144,7 +145,7 @@ public class EZCam {
     /**
      * Open camera to prepare preview
      * @param templateType capture mode e.g. CameraDevice.TEMPLATE_PREVIEW
-     * @param textureView TextureView where preview should be displayed
+     * @param textureView Surface where preview should be displayed
      */
     public void open(final int templateType, final TextureView textureView) {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -196,8 +197,8 @@ public class EZCam {
         }
     }
 
-    private void setupPreview_(int templateType, SurfaceTexture surfaceTexture){
-        Surface surface = new Surface(surfaceTexture);
+    private void setupPreview_(int templateType, TextureView textureView){
+        Surface surface = new Surface(textureView.getSurfaceTexture());
 
         try {
             captureRequestBuilder = cameraDevice.createCaptureRequest(templateType);
@@ -227,14 +228,15 @@ public class EZCam {
 
     private void setupPreview(final int templateType, final TextureView outputSurface){
         if(outputSurface.isAvailable()){
-            setupPreview_(templateType, outputSurface.getSurfaceTexture());
+            setupPreview_(templateType, outputSurface);
         }
         else{
             outputSurface.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
                 @Override
                 public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                    Log.e("SURFACE", width+":"+height);
                     setAspectRatioTextureView(outputSurface, width, height);
-                    setupPreview_(templateType, surface);
+                    setupPreview_(templateType, outputSurface);
                 }
 
                 public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {}
@@ -275,27 +277,29 @@ public class EZCam {
         switch (rotation) {
             case Surface.ROTATION_0:
                 newWidth = surfaceWidth;
-                newHeight = (surfaceWidth * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
+                newHeight = (surfaceWidth * previewSize.getWidth() / previewSize.getHeight());
                 break;
 
             case Surface.ROTATION_180:
                 newWidth = surfaceWidth;
-                newHeight = (surfaceWidth * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
+                newHeight = (surfaceWidth * previewSize.getWidth() / previewSize.getHeight());
                 break;
 
             case Surface.ROTATION_90:
                 newWidth = surfaceHeight;
-                newHeight = (surfaceHeight * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
+                newHeight = (surfaceHeight * previewSize.getWidth() / previewSize.getHeight());
                 break;
 
             case Surface.ROTATION_270:
                 newWidth = surfaceHeight;
-                newHeight = (surfaceHeight * largestPreviewSize.getWidth() / largestPreviewSize.getHeight());
+                newHeight = (surfaceHeight * previewSize.getWidth() / previewSize.getHeight());
                 break;
         }
 
         textureView.setLayoutParams(new FrameLayout.LayoutParams(newWidth, newHeight, Gravity.CENTER));
         rotatePreview(textureView, rotation, newWidth, newHeight);
+
+        Log.e("NEW DIM", newWidth+":"+newHeight);
     }
 
     private void rotatePreview(TextureView mTextureView, int rotation, int viewWidth, int viewHeight) {
