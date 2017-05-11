@@ -17,10 +17,6 @@ Or if you use Maven :
 	  <type>pom</type>
 	</dependency>
 
-# See sample
-
-**https://github.com/omaflak/Android-Camera2-Library/blob/master/app/src/main/java/me/aflak/libraries/MainActivity.java**
-
 # TextureView
 
 **Important : The TextureView must be in a FrameLayout.**
@@ -92,3 +88,5 @@ Or if you use Maven :
 
 - Recording videos
 - Apply custom filters
+
+**[MainActivity.java](https://github.com/omaflak/Android-Camera2-Library/blob/master/app/src/main/java/me/aflak/libraries/MainActivity.java)**
