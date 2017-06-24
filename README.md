@@ -1,6 +1,6 @@
 # EZCam [ ![Download](https://api.bintray.com/packages/omaflak/maven/ezcam/images/download.svg) ](https://bintray.com/omaflak/maven/ezcam/_latestVersion)
 
-EZCam is an Android library that simplifies the use of Camera 2 API.
+EZCam is an Android library that simplifies the use of Camera 2 API for a basic usage.
 
 # Dependencie
 
