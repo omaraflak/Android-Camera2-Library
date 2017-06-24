@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "me.aflak.libraries"
-        minSdkVersion 23
+        minSdkVersion 21
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
