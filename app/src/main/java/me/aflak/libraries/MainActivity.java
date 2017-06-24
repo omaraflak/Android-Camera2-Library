@@ -1,7 +1,6 @@
 package me.aflak.libraries;
 
 import android.Manifest;
-import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.hardware.camera2.CameraCharacteristics;
