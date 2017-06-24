@@ -17,6 +17,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
@@ -98,7 +99,9 @@ public class EZCam {
                             break;
 
                         case CameraCharacteristics.LENS_FACING_EXTERNAL:
-                            camerasList.put(CameraCharacteristics.LENS_FACING_EXTERNAL, id);
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                camerasList.put(CameraCharacteristics.LENS_FACING_EXTERNAL, id);
+                            }
                             break;
                     }
                 }
