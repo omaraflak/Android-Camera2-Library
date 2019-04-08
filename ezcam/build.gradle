@@ -13,7 +13,7 @@ ext {
     siteUrl = 'https://github.com/omaflak/Android-Camera2-Library'
     gitUrl = 'https://github.com/omaflak/Android-Camera2-Library.git'
 
-    libraryVersion = '2.3.3'
+    libraryVersion = '2.3.4'
 
     developerId = 'omaflak'
     developerName = 'Omar Aflak'
